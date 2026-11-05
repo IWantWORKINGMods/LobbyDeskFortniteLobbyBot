@@ -1,0 +1,68 @@
+name: Preserve verified LobbyDesk 1.2.4 downloads
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: lobbydesk-initial-download-migration
+  cancel-in-progress: false
+jobs:
+  migrate:
+    if: github.repository == 'IWantWORKINGMods/LobbyDeskDownloads' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Download and verify only the existing application assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, urllib.request, zipfile
+          expected = {
+              'LobbyDesk.exe': ('26d867debaa50f4fe5f0731180ed36783d561723f9b236a97a1aaed8b00879ce', 97579520),
+              'LobbyDesk-v1.2.4.zip': ('e50dddba92f42d57209e1d04ce985db9c4d7e774ecdfc982d9073d0a54f5511b', 36229101),
+              'SHA256SUMS.txt': ('dbbdaac154ed173585a16d5241846a41e856783c0e5e638215f2c041004d1d63', 167),
+          }
+          out = pathlib.Path('release')
+          out.mkdir()
+          for name, (digest, size) in expected.items():
+              url = 'https://github.com/IWantWORKINGMods/LobbyDeskFortniteLobbyBot/releases/download/v1.2.4/' + name
+              with urllib.request.urlopen(url, timeout=120) as response:
+                  data = response.read(size + 1)
+              if len(data) != size or hashlib.sha256(data).hexdigest() != digest:
+                  raise SystemExit('Migration stopped: a downloaded application asset did not match the verified original.')
+              (out / name).write_bytes(data)
+          with zipfile.ZipFile(out / 'LobbyDesk-v1.2.4.zip') as archive:
+              for name in ['LICENSE.txt', 'THIRD_PARTY_NOTICES.txt']:
+                  if archive.read('LobbyDesk-v1.2.4/' + name) != pathlib.Path(name).read_bytes():
+                      raise SystemExit('Migration stopped: distribution notices were changed.')
+          pathlib.Path('migration-notes.txt').write_text('Verified copy of the existing LobbyDesk 1.2.4 Windows release. Application bytes and license notices are unchanged. This repository hosts downloads and automatic updates.\n')
+          print('Verified all three existing application assets and distribution notices.')
+          PY
+      - name: Create and verify the replacement download release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_id=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.id')
+          test "$repo_id" = '1446618832'
+          gh release create v1.2.4 release/LobbyDesk.exe release/LobbyDesk-v1.2.4.zip release/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'LobbyDesk v1.2.4' --notes-file migration-notes.txt --draft
+          release_id=$(gh release view v1.2.4 --repo "$GITHUB_REPOSITORY" --json databaseId --jq '.databaseId')
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > release-metadata.json
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          release = json.loads(pathlib.Path('release-metadata.json').read_text())
+          expected = {p.name: p for p in pathlib.Path('release').iterdir()}
+          if release['tag_name'] != 'v1.2.4' or release['prerelease'] or not release['draft'] or len(release['assets']) != 3:
+              raise SystemExit('Migration draft metadata did not match.')
+          for asset in release['assets']:
+              file = expected.get(asset['name'])
+              if file is None or asset['state'] != 'uploaded' or asset['size'] != file.stat().st_size or asset.get('digest') != 'sha256:' + hashlib.sha256(file.read_bytes()).hexdigest():
+                  raise SystemExit('Migration draft asset verification failed; the draft was not published.')
+          print('Verified uploaded draft assets.')
+          PY
+          gh release edit v1.2.4 --repo "$GITHUB_REPOSITORY" --draft=false --latest

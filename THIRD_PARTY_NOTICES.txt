@@ -1,0 +1,37 @@
+LobbyDesk is an independent account/party management application. It is not
+affiliated with or endorsed by Epic Games. Fortnite and Epic Games are
+trademarks of their respective owners.
+
+Build toolchain: GCC 13.2 and MinGW-w64.
+The executable statically links GCC and C++ runtime support under the
+GCC Runtime Library Exception. MinGW-w64 runtime notices are included
+in the licenses directory in the download ZIP and the app's bundled notices.
+
+Bundled runtime: Node.js v24.22.2, Windows x64, downloaded from nodejs.org.
+Its full license and incorporated notices are in licenses/Node-LICENSE.txt.
+
+Party integration: fnbr Epic Parties source (MIT), https://github.com/fnbrjs/fnbr.js
+Pinned upstream commit: f38832f526305d7a4899de40c58d5631cb2b84a2 (PR #857).
+Upstream source declares version 5.0.0; that version was unavailable from npm
+when this build was prepared. This is a locally compiled source snapshot,
+packaged as 5.0.0-lobbydesk.1, not a published fnbr npm release.
+All TypeScript and resource sources are unchanged. Only the package manifest
+is reduced to runtime dependencies; UPSTREAM_PACKAGE.json preserves the
+original. vendor/fnbr-source.json records provenance and per-file hashes.
+HTTP client: Axios 1.21.0 (MIT), https://github.com/axios/axios
+JSON for Modern C++: nlohmann/json 3.12.0 (MIT),
+https://github.com/nlohmann/json, licenses/nlohmann-json-LICENSE.txt.
+
+Bundled JavaScript packages and their declared licenses are listed in
+licenses/npm-components.txt. Their license texts are under licenses/npm/.
+The @sapphire/async-queue package omits its repository license from npm;
+the included copy comes from the Sapphire utilities monorepo:
+https://github.com/sapphiredev/utilities/blob/main/LICENSE.md
+
+The source build uses esbuild 0.28.2 (MIT); esbuild is not embedded in the
+application. The build maps the deprecated Node core punycode import in
+Stanza to the bundled punycode 2.3.1 package.
+
+References:
+https://www.mingw-w64.org/
+https://www.gnu.org/licenses/gcc-exception-3.1.html
