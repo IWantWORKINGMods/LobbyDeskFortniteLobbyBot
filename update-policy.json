@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "latestVersion": "2.0.0",
+  "latestVersion": "2.0.1",
   "minimumVersion": "2.0.0",
-  "updateType": "major",
-  "releaseUrl": "https://github.com/IWantWORKINGMods/LobbyDeskFortniteLobbyBot/releases/tag/v2.0.0",
-  "publishedAt": "2026-11-08T01:26:44Z"
+  "updateType": "minor",
+  "releaseUrl": "https://github.com/IWantWORKINGMods/LobbyDeskFortniteLobbyBot/releases/tag/v2.0.1",
+  "publishedAt": "2026-11-08T02:17:17Z"
 }
